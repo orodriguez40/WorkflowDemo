@@ -1,11 +1,6 @@
 pipeline {
   agent any
 
-  tools {
-    // If you’ve named a Maven installation “M3” under Manage Jenkins → Global Tool Configuration
-    maven 'M3'
-  }
-
   stages {
     stage('Checkout SCM') {
       steps {
@@ -29,10 +24,9 @@ pipeline {
       steps {
         script {
           if (isUnix()) {
-            sh "docker build -t orodriguez40/workflowdemo:${BUILD_NUMBER} ."
+            sh "docker build -t orodriguez40/workflow-demo:${BUILD_NUMBER} ."
           } else {
-            // Use %BUILD_NUMBER% in Windows batch
-            bat "docker build -t orodriguez40/workflowdemo:%BUILD_NUMBER% ."
+            bat "docker build -t orodriguez40/workflow-demo:%BUILD_NUMBER% ."
           }
         }
       }
