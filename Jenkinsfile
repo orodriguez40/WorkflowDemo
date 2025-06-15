@@ -1,25 +1,20 @@
 pipeline {
   agent any
-
   stages {
     stage('Checkout SCM') {
-      steps {
-        checkout scm
-      }
+      steps { checkout scm }
     }
-
-    stage('Build & Test') {
+    stage('Build, Test & Package') {
       steps {
         script {
           if (isUnix()) {
-            sh 'mvn clean test'
+            sh 'mvn clean package'
           } else {
-            bat 'mvn clean test'
+            bat 'mvn clean package'
           }
         }
       }
     }
-
     stage('Docker Build') {
       steps {
         script {
@@ -31,7 +26,6 @@ pipeline {
         }
       }
     }
-
     stage('Docker Info') {
       steps {
         script {
