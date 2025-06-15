@@ -2,8 +2,10 @@ pipeline {
   agent any
 
   environment {
-    // Tell Maven to use the Jenkins user’s .m2 directory so dependencies stick around between builds
-    MAVEN_OPTS = '-Dmaven.repo.local=$HOME/.m2/repository'
+    // your Docker Hub repo
+    DOCKER_REPO = 'orodriguez40/workflow-demo'
+    // Maven Docker image
+    MVN_IMAGE   = 'maven:3.9.3-eclipse-temurin-17'
   }
 
   stages {
@@ -14,19 +16,44 @@ pipeline {
     }
 
     stage('Build & Test') {
-      // Run Maven *inside* a Docker container that already has Maven + JDK,
-      // and mount ~/.m2 so Central downloads only happen once.
       steps {
-        docker.image('maven:3.9.3-eclipse-temurin-17').inside('-v $HOME/.m2:/root/.m2') {
-          sh 'mvn clean package -B'
+        script {
+          // use the Maven image, mounting your local ~/.m2 cache
+          docker.image(env.MVN_IMAGE)
+                .inside("-v ${env.HOME}/.m2:/root/.m2") {
+            // inside a Linux container, use sh
+            sh 'mvn clean test'
+          }
         }
       }
     }
 
-    stage('Docker Build') {
+    stage('Package & Docker Build') {
       steps {
-        sh "docker build -t orodriguez40/workflow-demo:${BUILD_NUMBER} ."
+        script {
+          // package your app
+          sh 'mvn clean package -DskipTests'
+
+          // build and tag your Docker image
+          sh """
+            docker build \\
+              -t ${env.DOCKER_REPO}:${env.BUILD_NUMBER} \\
+              .
+          """
+        }
       }
+    }
+
+    stage('Docker Info') {
+      steps {
+        sh 'docker info'
+      }
+    }
+  }
+
+  post {
+    always {
+      archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
     }
   }
 }
