@@ -2,10 +2,10 @@ pipeline {
   agent any
 
   environment {
-    // your Docker Hub repo
-    DOCKER_REPO = 'orodriguez40/workflowdemo'
-    // Maven Docker image
-    MVN_IMAGE   = 'maven:3.9.3-eclipse-temurin-17'
+    // change to your Docker Hub repo
+    DOCKER_REPO = 'orodriguez40/workflow-demo'
+    // tag your image with the Jenkins build number
+    IMAGE_TAG   = "${DOCKER_REPO}:${BUILD_NUMBER}"
   }
 
   stages {
@@ -17,42 +17,40 @@ pipeline {
 
     stage('Build & Test') {
       steps {
-        script {
-          // use the Maven image, mounting your local ~/.m2 cache
-          docker.image(env.MVN_IMAGE)
-                .inside("-v ${env.HOME}/.m2:/root/.m2") {
-            // inside a Linux container, use sh
-            sh 'mvn clean test'
-          }
-        }
+        // 1) compile & run tests
+        bat 'mvn clean test'
       }
     }
 
-    stage('Package & Docker Build') {
+    stage('Package') {
       steps {
-        script {
-          // package your app
-          sh 'mvn clean package -DskipTests'
+        // 2) package JAR (skip tests since they already ran)
+        bat 'mvn clean package -DskipTests'
+      }
+    }
 
-          // build and tag your Docker image
-          sh """
-            docker build \\
-              -t ${env.DOCKER_REPO}:${env.BUILD_NUMBER} \\
-              .
-          """
-        }
+    stage('Docker Build') {
+      steps {
+        // 3) build your Docker image
+        bat """
+          docker build ^
+            -t %IMAGE_TAG% ^
+            .
+        """
       }
     }
 
     stage('Docker Info') {
       steps {
-        sh 'docker info'
+        // 4) just dump Docker info to confirm
+        bat 'docker info'
       }
     }
   }
 
   post {
     always {
+      // archive your JAR for inspection
       archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
     }
   }
