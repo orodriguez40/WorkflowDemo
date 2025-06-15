@@ -3,7 +3,7 @@ pipeline {
 
   environment {
     // your Docker Hub repo
-    DOCKER_REPO = 'orodriguez40/workflow-demo'
+    DOCKER_REPO = 'orodriguez40/workflowdemo'
     // Maven Docker image
     MVN_IMAGE   = 'maven:3.9.3-eclipse-temurin-17'
   }
